@@ -1,12 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from typing import Optional, Tuple, Callable
 import os
 import pickle
-import utils.settings as settings
+import settings
 from numba import njit, jit
 import matplotlib.collections as mcoll
-import matplotlib.path as mpath
+from scipy.ndimage import gaussian_filter
 
 
 @njit(parallel=True, fastmath=True, nogil=True)
@@ -41,11 +40,11 @@ def grid(
             4 * np.pi * np.cos(np.pi * i / 3 + angle) *
             (Y - grsc * offs[1]) / (np.sqrt(3) * grsc)
         )
-    
+
     output = output[0, :] * output[1, :] * output[2, :]
 
     return output
-    
+
 
 @jit
 def grid_2d(
@@ -111,7 +110,7 @@ def grid_meanfr(
     # if len(X.shape) == 2:
     #     X = np.expand_dims(X, axis=2)
     #     Y = np.expand_dims(Y, axis=2)
-    assert len(X.shape) == 3 and len(Y.shape) == 3,\
+    assert len(X.shape) == 3 and len(Y.shape) == 3, \
         "X and Y must be 3D arrays (phbins, bins, N cells)"
     output = np.ones((3, X.shape[0], X.shape[1], X.shape[2]))
     for i in np.arange(3):
@@ -136,7 +135,7 @@ def convert_to_rhombus(x, y):
         y (float): coordinates in the y dimension
 
     Returns:
-        (float, float): tuple of floats representing the rhombus-transformed 
+        (float, float): tuple of floats representing the rhombus-transformed
             coordinates in the x and y dimension respectively.
     """
     return np.asarray(x + 0.5 * y), np.asarray(np.sqrt(3) / 2 * y)
@@ -156,13 +155,15 @@ def adap_euler(s, tt, tau, w):
     Returns:
         _type_: _description_
     """
+    assert not np.isnan(tt).any(), "tt contains NaN values"
     v = np.zeros(np.shape(tt))
     a = np.zeros(np.shape(tt))
     v[0] = s[0]
     a[0] = 0
-    dt = np.mean(np.diff(tt))
+    dt = 0
+    if len(tt) > 1:
+        dt = (tt[-1] - tt[0]) / (len(tt) - 1)
     for it in range(len(v)-1):
-        # dv = (-w*a[it]+s[it]-v[it])/0.01*dt
         v[it+1] = max(s[it] - w*a[it], 0)
         da = (v[it]-a[it])/tau*dt
         a[it+1] = a[it] + da
@@ -180,7 +181,7 @@ def get_hexsym(
     trajectory.
 
     Args:
-        summed_fr (np.ndarray): Array firing rates over time summed over N 
+        summed_fr (np.ndarray): Array firing rates over time summed over N
             cells
         traj (np.ndarray): Trajectory corresponding to firing rate array. with
             shape [time, x, y, direc]. "direc" should be in radians.
@@ -212,7 +213,6 @@ def get_pathsym(
         fold (int, optional): Order of path symmetry to measure.
     """
     t, x, y, direc = traj
-    # pathsym = np.abs(np.sum(np.exp(- fold * direc[1:] * 1j))) / (len(direc[1:]))
     pathsym = np.abs(np.sum(np.exp(- fold * direc * 1j))) / (len(direc))
 
     return pathsym
@@ -230,58 +230,12 @@ def get_pathsyms():
         rw_path60 (list):       list of path hexasymmetries for a random walk
     """
     pathsyms_fname = settings.pathsyms_fname
-    assert os.path.isfile(pathsyms_fname),\
+    assert os.path.isfile(pathsyms_fname), \
         "No pathsyms file! Run produce_pathsyms.py"
     with open(pathsyms_fname, 'rb') as f:
         pathsyms = pickle.load(f)
-    
+
     return pathsyms["star"], pathsyms["pwl"], pathsyms["rw"]
-
-
-def get_hexsym_binning(meanfr, phbins=360):
-    ntile = 4
-    fr2 = np.tile(meanfr,ntile) - np.mean(meanfr) # tile to account for periodicity
-    power = 2./len(fr2) * abs(np.fft.fft(fr2))[:len(fr2)//2]
-    freq = np.fft.fftfreq(fr2.size, d=1/phbins)[:len(fr2)//2]
-    ff = np.linspace(0,1./2., ntile*phbins//2)
-    
-    if 0:
-        plt.figure()
-        plt.plot(ff,power)
-        plt.xticks([1/360,1/90,1/60,1/45,1/30,1/17,1/15], ['360','90','60','45','30','17','15'])
-    
-    gr60 = power[np.argmin(abs(freq-1./60*360))] # pick index which is closest to 60deg
-    # gr45 = power[np.argmin(abs(ff-1./45*360/phbins))]
-    # gr90 = power[np.argmin(abs(ff-1./90*360/phbins))]
-    # sym5 = power[np.argmin(abs(ff-1./(360/5)*360/phbins))]
-    # sym7 = power[np.argmin(abs(ff-1./(360/7)*360/phbins))]
-    # gr17 = power[np.argmin(abs(ff-1./17*360/phbins))]
-    
-    # ph = np.angle(np.fft.fft(fr2))[:len(fr2)//2]
-    # p60 = ph[np.argmin(abs(ff-1./60*360/phbins))]/2/np.pi*60
-    # p45 = ph[np.argmin(abs(ff-1./45*360/phbins))]/2/np.pi*45
-    # p90 = ph[np.argmin(abs(ff-1./90*360/phbins))]/2/np.pi*90
-        
-    return gr60,power,freq
-
-
-def get_hexsym_binning2(meanfr):
-    ft = np.fft.fft(meanfr)
-    frq = np.fft.fftfreq(len(meanfr))
-    frq_deg = frq * 360
-    # Find the index of the frequency 6 component
-    idx = np.argmin(np.abs(frq_deg - 6.))
-
-    # Compute the power of the frequency 6 component
-    power = np.abs(ft[idx])**2
-
-    # Compute the sum of the powers of all frequency components
-    total_power = np.sum(np.abs(ft)**2)
-
-    # Compute the normalized power of the frequency 6 component
-    norm_power = power / total_power
-
-    return norm_power, frq
 
 
 def visualise_traj(
@@ -348,15 +302,15 @@ def visualise_traj(
             plt.savefig(fname)
             plt.close()
     else:
-        print(f"trajectory plot exists, skipping")
+        print("trajectory plot exists, skipping")
 
 
 def get_plotting_grid(
     trajec,
     offs,
-    nx = settings.nx,
-    ny = settings.ny,
-    grsc = settings.grsc,
+    nx=settings.nx,
+    ny=settings.ny,
+    grsc=settings.grsc,
     extent: float = None,
     max_bound: float = 6000,
     xticks: list = [],
@@ -406,7 +360,7 @@ def get_plotting_grid(
 
 
 def ax_pos(
-    ax, 
+    ax,
     movex,
     movey,
     scalex,
@@ -428,8 +382,10 @@ def ax_pos(
 
     # centering for scaling operation
     mean_pointsax = np.array(
-        [(pointsax[0][0] + pointsax[1][0])/2,
-        (pointsax[0][1] + pointsax[1][1])/2]
+        [
+            (pointsax[0][0] + pointsax[1][0])/2,
+            (pointsax[0][1] + pointsax[1][1])/2
+        ]
     )
 
     pointsax -= mean_pointsax
@@ -455,10 +411,17 @@ def ax_pos(
 
 
 def colorline(
-    x, y, z=None, cmap=plt.get_cmap('copper'), norm=plt.Normalize(0.0, 1.0),
-        linewidth=3, alpha=1.0):
+    x,
+    y,
+    z=None,
+    cmap=plt.get_cmap('copper'),
+    norm=plt.Normalize(0.0, 1.0),
+    linewidth=3,
+    alpha=1.0
+):
     """
-    http://nbviewer.ipython.org/github/dpsanders/matplotlib-examples/blob/master/colorline.ipynb
+    http://nbviewer.ipython.org/github/dpsanders/matplotlib-examples/blob/
+    master/colorline.ipynb
     http://matplotlib.org/examples/pylab_examples/multicolored_line.html
     Plot a colored line with coordinates x and y
     Optionally specify colors in the array z
@@ -470,7 +433,7 @@ def colorline(
         z = np.linspace(0.0, 1.0, len(x))
 
     # Special case if a single number:
-    if not hasattr(z, "__iter__"):  # to check for numerical input -- this is a hack
+    if not hasattr(z, "__iter__"):  # to check for numerical input
         z = np.array([z])
 
     z = np.asarray(z)
@@ -487,11 +450,10 @@ def colorline(
 
 def make_segments(x, y):
     """
-    Create list of line segments from x and y coordinates, in the correct format
-    for LineCollection: an array of the form numlines x (points per line) x 2 (x
-    and y) array
+    Create list of line segments from x and y coordinates, in the correct
+    format for LineCollection: an array of the form numlines x (points per
+    line) x 2 (x and y) array
     """
-
     points = np.array([x, y]).T.reshape(-1, 1, 2)
     segments = np.concatenate([points[:-1], points[1:]], axis=1)
     return segments
@@ -499,3 +461,78 @@ def make_segments(x, y):
 
 def get_t6upperbnd(tort, dt, m):
     return np.sqrt((1 + 2 / (np.exp(18 * tort**2 * dt) - 1)) / m)
+
+
+def bin_avg(x, y, signal, xbins, ybins):
+    """
+    Compute the binned averages for a 2D signal.
+
+    Parameters
+    ----------
+    x : ndarray
+        An array containing the x-coordinates of the points in the signal.
+    y : ndarray
+        An array containing the y-coordinates of the points in the signal.
+    signal : ndarray
+        An array containing the signal strengths at each point.
+    xbins : int or sequence of scalars or str
+        Bin edges along the x-axis.
+    ybins : int or sequence of scalars or str
+        Bin edges along the y-axis.
+
+    Returns
+    -------
+    avg : ndarray
+        The binned averages in the shape (len(x), len(y)).
+    xedges : ndarray
+        The bin edges along the x axis.
+    yedges : ndarray
+        The bin edges along the y axis.
+
+    Notes
+    -----
+    This function uses `numpy.histogram2d` to bin the signal into boxes
+    defined by `xbins` and `ybins`. It then computes the average signal
+    within each box, replacing any NaNs (which occur if a box contains no
+    points) with zero.
+    """
+    counts, xedges, yedges = np.histogram2d(x, y, bins=[xbins, ybins])
+    sum_sig, _, _ = np.histogram2d(x, y, bins=[xbins, ybins], weights=signal)
+    np.seterr(invalid="ignore")
+    avg = sum_sig / counts
+    avg = np.nan_to_num(avg)  # replace NaNs with zero
+    return avg, xedges, yedges
+
+
+def smooth_with_gaussian(avg, sigma):
+    """
+    Apply a Gaussian filter to an array and scale it to retain the maximum
+    value of the original array.
+
+    Parameters
+    ----------
+    avg : ndarray
+        The input array to be smoothed.
+    sigma : scalar or sequence of scalars
+        The standard deviation for Gaussian kernel. The standard deviations of
+        the Gaussian filter are given for each axis as a sequence, or as a
+        single number, in which case it is equal for all axes.
+
+    Returns
+    -------
+    out : ndarray
+        The array after applying a Gaussian filter and rescaling to retain
+        the maximum value of the original array.
+
+    Notes
+    -----
+    This function uses scipy.ndimage.gaussian_filter to apply a Gaussian
+    filter. Smoothing might cause the maximum value to decrease which is often
+    undesired. This function scales with a multiplicative factor obtained by
+    dividing the original maximum value by the new maximum value to keep the
+    maximum value constant pre and post smoothing respectively.
+    """
+    smoothed = gaussian_filter(avg, sigma=sigma)
+    scale_factor = np.amax(avg) \
+        / np.amax(smoothed) if np.amax(smoothed) != 0 else 1
+    return smoothed * scale_factor

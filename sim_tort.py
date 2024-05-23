@@ -1,14 +1,11 @@
-# %%
-from functions.gridfcts import (
+from utils.grid_funcs import (
     gridpop_clustering,
     gridpop_conj,
     gridpop_repsupp,
     gen_offsets,
-    get_offsets,
     traj,
     traj_pwl
 )
-from utils.data_handler import load_data
 from utils.utils import (
     convert_to_rhombus,
     get_hexsym,
@@ -20,17 +17,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pickle
 import os
-import utils.settings as settings
+import settings
 import time
 from datetime import timedelta
-from matplotlib.ticker import FormatStrFormatter
-import matplotlib
 
 
 def sim_bnds(
     traj_type: str,
     num_trajecs: int = settings.num_trajecs,
-    n_torts : tuple = settings.n_torts,
+    n_torts: tuple = settings.n_torts,
     tort_range: tuple = settings.tort_range,
     grsc: float = settings.grsc,
     N: int = settings.N,
@@ -47,15 +42,9 @@ def sim_bnds(
     torts = np.logspace(
         np.log10(tort_range[0]),
         np.log10(tort_range[1]),
-        n_torts, 
+        n_torts,
         endpoint=True
     )
-
-    # point to directory of trajectory type
-    if traj_type == "rw":
-        traj_path = settings.rw_loc
-    elif traj_type == "pwl":
-        traj_path = settings.pwl_loc
 
     # output arrays initialisation
     fr_arr = np.zeros((num_trajecs, n_torts))
@@ -72,21 +61,21 @@ def sim_bnds(
         hypothesis,
         "torts",
         f"{traj_type}",
-        f"fr_torts.pkl"
+        "fr_torts.pkl"
     )
     hex_fname = os.path.join(
         settings.loc,
         hypothesis,
         "torts",
         f"{traj_type}",
-        f"hex_torts.pkl"
+        "hex_torts.pkl"
     )
     pathhex_fname = os.path.join(
         settings.loc,
         hypothesis,
         "torts",
         f"{traj_type}",
-        f"pathhex_torts.pkl"
+        "pathhex_torts.pkl"
     )
 
     # if firing rate array pickle files don't exist, run simulations
@@ -153,26 +142,25 @@ def sim_bnds(
                     trajec
                 )
 
-
                 if j == 1:
                     end_time2 = time.monotonic()
                     print(
-                        "One size simulation finished in: ", 
+                        "One size simulation finished in: ",
                         timedelta(seconds=end_time2 - start_time2)
                     )
                     print(
-                        f"{n_torts} simulations estimated in: ", 
+                        f"{n_torts} simulations estimated in: ",
                         timedelta(seconds=(end_time2 - start_time2) * n_torts)
                     )
 
             if i == 1:
                 end_time = time.monotonic()
                 print(
-                    "One set of trajectory simulations finished in: ", 
+                    "One set of trajectory simulations finished in: ",
                     timedelta(seconds=end_time - start_time)
                 )
                 print(
-                    f"{num_trajecs} simulations estimated in: ", 
+                    f"{num_trajecs} simulations estimated in: ",
                     timedelta(seconds=(end_time - start_time) * num_trajecs)
                 )
 
@@ -195,25 +183,22 @@ def sim_bnds(
     hexes = np.load(hex_fname, allow_pickle=True)
     pathhexes = np.load(pathhex_fname, allow_pickle=True)
 
-    
     hexplotloc = os.path.join(
         settings.loc,
         "plots",
         hypothesis,
         "torts",
         f"{traj_type}",
-        f"hex.png"
+        "hex.png"
     )
-
 
     fig = plt.figure(figsize=(12, 12))
     plt.rcParams.update({'font.size': settings.fs})
     spec = fig.add_gridspec(
-        ncols=1, 
+        ncols=1,
         nrows=4,
         height_ratios=[1, 0.75, 0.75, 1]
     )
-
 
     # plot hexsym, path hexsym
     ax1 = fig.add_subplot(spec[0, 0])
@@ -241,9 +226,11 @@ def sim_bnds(
     plt.fill_between(
         torts,
         np.mean(pathhexes * np.mean(fr_arr, axis=0), axis=0) -
-        np.std(pathhexes * np.mean(fr_arr, axis=0), axis=0) / np.sqrt(pathhexes.shape[0]),
+        np.std(pathhexes * np.mean(fr_arr, axis=0), axis=0) /
+        np.sqrt(pathhexes.shape[0]),
         np.mean(pathhexes * np.mean(fr_arr, axis=0), axis=0) +
-        np.std(pathhexes * np.mean(fr_arr, axis=0), axis=0) / np.sqrt(pathhexes.shape[0]),
+        np.std(pathhexes * np.mean(fr_arr, axis=0), axis=0) /
+        np.sqrt(pathhexes.shape[0]),
         alpha=0.2,
     )
     plt.margins(0.01, 0.15)
@@ -251,14 +238,11 @@ def sim_bnds(
     plt.ylabel("Hexasymmetry\n(spk/s)")
     plt.locator_params(axis='y', nbins=3)
     plt.ylim(0, 40)
-    # plt.yscale("log")
-    # plt.xscale("log")
     plt.xticks(np.linspace(0.1, 0.7, 7, endpoint=True), [])
     plt.legend()
     ax = plt.gca()
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
-
 
     # plot difference in hexsyms
     hexdiff = hexes - pathhexes * np.mean(fr_arr, axis=0)
@@ -280,10 +264,7 @@ def sim_bnds(
     )
     plt.margins(0.01, 0.15)
     plt.ylabel("Mean difference\n(spk/s)")
-    # plt.yscale("log")
-    # plt.xscale("log")
     plt.locator_params(axis='y', nbins=3)
-    # plt.ylim(-1, 10)
     plt.ylim(-10, 40)
     plt.yticks([0, 20, 40])
     plt.xticks(np.linspace(0.1, 0.7, 7, endpoint=True), [])
@@ -291,16 +272,7 @@ def sim_bnds(
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
 
-
     # mean fr
-    normedhexplotloc = os.path.join(
-        settings.loc,
-        "plots",
-        hypothesis,
-        "torts",
-        f"{traj_type}",
-        f"normedhex.png"
-    )
     ax3 = fig.add_subplot(spec[2, 0])
     plt.rcParams.update({'font.size': settings.fs})
     plt.plot(
@@ -320,41 +292,16 @@ def sim_bnds(
         alpha=0.2,
     )
     plt.margins(0.01, 0.15)
-    # plt.title(hypothesis+f" mean over {num_trajecs} trials")
-    # plt.xlabel("Tortuosity")
     plt.locator_params(axis='y', nbins=3)
-    # plt.ylim(
-    #     (np.amin(fr_arr) - np.mean(fr_arr)) * 0.3 + np.mean(fr_arr),
-    #     (np.amax(fr_arr) - np.mean(fr_arr)) * 0.3 + np.mean(fr_arr)
-    # )
-    # plt.ylim(
-    #     839.4,
-    #     840.2
-    # )
     plt.ylim(820, 860)
     plt.ylabel("Population\nfiring rate\n(spk/s)")
-    # plt.yscale("log")
-    # plt.xscale("log")
     plt.xticks(np.linspace(0.1, 0.7, 7, endpoint=True), [])
-    # plt.yticks([839.4, 839.8, 840.2])
     plt.yticks([820, 840, 860])
     ax = plt.gca()
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
-    # ax.get_yaxis().set_major_formatter(
-    #     matplotlib.ticker.FuncFormatter(lambda x, p: format(int(x), ',')))
-    # plt.ticklabel_format(style='plain')    # prevents scientific notation
-
 
     # plot pathsym
-    pathhexplotloc = os.path.join(
-        settings.loc,
-        "plots",
-        hypothesis,
-        "torts",
-        f"{traj_type}",
-        f"pathhex.png"
-    )
     ax4 = fig.add_subplot(spec[3, 0])
     plt.rcParams.update({'font.size': 18})
     plt.plot(
@@ -375,20 +322,9 @@ def sim_bnds(
         color="black",
         label=r"mean $|\tilde{T}_6|$"
     )
-    # plt.fill_between(
-    #     torts,
-    #     np.mean(pathhexes, axis=0) -
-    #     np.std(pathhexes, axis=0) / np.sqrt(pathhexes.shape[0]),
-    #     np.mean(pathhexes, axis=0) +
-    #     np.std(pathhexes, axis=0) / np.sqrt(pathhexes.shape[0]),
-    #     alpha=0.2,
-    #     color="darkorange"
-    # )
     plt.margins(0.01, 0.05)
     plt.xlabel(r"Movement tortuosity $\sigma_\theta~(rad/s^{1/2}$)")
     plt.ylabel("Path hexasymmetry")
-    # plt.yscale("log")
-    # plt.xscale("log")
     plt.locator_params(axis='y', nbins=3)
     plt.ylim(0, 0.04)
     ax = plt.gca()
@@ -403,7 +339,6 @@ def sim_bnds(
 if __name__ == "__main__":
     start_time = time.monotonic()
     for traj_type in ["rw"]:
-        # for hypothesis in ["conjunctive", "clustering", "repsupp"]:
         for hypothesis in ["repsupp"]:
             sim_bnds(
                 traj_type=traj_type,
@@ -412,7 +347,7 @@ if __name__ == "__main__":
             )
     end_time = time.monotonic()
     print(
-        "torts simulations finished in: ", 
+        "torts simulations finished in: ",
         timedelta(seconds=end_time - start_time)
     )
 
@@ -420,7 +355,7 @@ if __name__ == "__main__":
     plt.rcParams.update({'font.size': settings.fs})
     offs = [0, 0]
     spec = fig.add_gridspec(
-        ncols=4, 
+        ncols=4,
         nrows=1,
     )
     plotloc = os.path.join(
@@ -428,13 +363,11 @@ if __name__ == "__main__":
         "plots",
         "trajectories",
         "rw",
-        f"torts.png"
+        "torts.png"
     )
-
 
     init_dirs = np.linspace(0, 2*np.pi, 5, endpoint=False)
     colours = ["red", "yellow", "lime", "hotpink", "lightgray"]
-
 
     ax1 = fig.add_subplot(spec[0, 0])
     for i in range(len(init_dirs)):
@@ -442,12 +375,12 @@ if __name__ == "__main__":
             traj_pwl(
                 phbins=settings.phbins,
                 rmax=settings.rmax,
-                dt = settings.dt
-            ), 
-            offs, 
-            extent=600, 
-            title=r"$p-l$", 
-            titlepos = [0.5, 1.05], 
+                dt=settings.dt
+            ),
+            offs,
+            extent=600,
+            title=r"$p-l$",
+            titlepos=[0.5, 1.05],
             yticks=[-600, 0, 600],
             xticks=[0, 600],
             trajcolor=colours[i],
@@ -455,7 +388,6 @@ if __name__ == "__main__":
             ylabel="y (cm)",
             xlabel="x (cm)"
         )
-
 
     ax2 = fig.add_subplot(spec[0, 1])
     for i in range(len(init_dirs)):
@@ -472,12 +404,11 @@ if __name__ == "__main__":
             offs,
             extent=600,
             title="rand\n" + r"$\sigma_\theta=0.1~rad/s^{1/2}$",
-            titlepos = [0.5, 1.05],
+            titlepos=[0.5, 1.05],
             xticks=[-600, 0, 600],
             trajcolor=colours[i],
             xlabel="x (cm)"
         )
-
 
     ax3 = fig.add_subplot(spec[0, 2])
     for i in range(len(init_dirs)):
@@ -494,11 +425,10 @@ if __name__ == "__main__":
             offs,
             extent=600,
             title="rand\n" + r"$\sigma_\theta=0.25~rad/s^{1/2}$",
-            titlepos = [0.5, 1.05],
+            titlepos=[0.5, 1.05],
             xticks=[-600, 0, 600], trajcolor=colours[i],
             xlabel="x (cm)"
         )
-
 
     ax3 = fig.add_subplot(spec[0, 3])
     for i in range(len(init_dirs)):
@@ -515,11 +445,10 @@ if __name__ == "__main__":
             offs,
             extent=600,
             title="rand\n" + r"$\sigma_\theta=0.5~rad/s^{1/2}$",
-            titlepos = [0.5, 1.05],
+            titlepos=[0.5, 1.05],
             xticks=[-600, 0, 600], trajcolor=colours[i],
             xlabel="x (cm)"
         )
-
 
     plt.tight_layout()
     os.makedirs(os.path.dirname(plotloc), exist_ok=True)

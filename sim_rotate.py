@@ -1,7 +1,7 @@
 """
 Performs rotation simulations for all hypotheses.
 """
-from functions.gridfcts import (
+from utils.grid_funcs import (
     gridpop_clustering,
     gridpop_repsupp,
     gridpop_conj,
@@ -9,90 +9,40 @@ from functions.gridfcts import (
     gen_offsets,
     traj
 )
-from utils.utils import *
+from utils.utils import get_hexsym, get_pathsym, convert_to_rhombus
 import numpy as np
-import matplotlib.pyplot as plt
 import pickle
 import os
-import utils.settings as settings
+import settings
 import time
 from datetime import timedelta
-from numba import get_num_threads, set_num_threads
-
-
-def plt_rot_fr(fr, idxs, deg_list, fname, xlim=None, ylim=None, size="60"):
-    """
-    plots the firing rate as a function of movement direction for a set of
-    rotated trajectories
-    """
-    direc_binned = np.linspace(-np.pi, np.pi, utils.settings.phbins + 1)
-    angles = 180. / np.pi * \
-                (direc_binned[:-1] + direc_binned[1:]) / 2.
-    plt.figure(figsize=(12, 4))
-    plt.rcParams.update({'font.size': utils.settings.fs})
-    for idx in idxs:
-        plt.plot(
-            angles,
-            fr[:, idx, :].mean(axis=0),
-            label=f"{deg_list[idx]:.0f}$^o$"
-        )
-        plt.fill_between(
-            angles,
-            fr[:, idx, :].mean(axis=0) -
-            np.std(fr[:, idx, :], axis=0) / np.sqrt(fr.shape[0]),
-            fr[:, idx, :].mean(axis=0) +
-            np.std(fr[:, idx, :], axis=0) / np.sqrt(fr.shape[0]),
-            alpha=0.2,
-        )
-    if not xlim:
-        plt.xticks(np.arange(-180, 180 + 30, 30))
-        title = f"circle, size={size}" if "circ" in fname else f"square, size={size}"
-        plt.title(title)
-    if xlim:
-        plt.xlim(xlim)
-    if ylim:
-        plt.ylim(ylim)
-    os.makedirs(os.path.dirname(fname), exist_ok=True)
-    plt.xlabel("Movement direction (degrees)")
-    plt.ylabel("Total firing rate (spks/s)")
-    if xlim:
-        plt.legend()
-    plt.tight_layout()
-    plt.savefig(fname)
-    plt.close()
+from joblib import Parallel, delayed
+from tqdm import tqdm
 
 
 def compare_rotate_samegrid(
-    traj_type: str,
-    n_trajecs: int = utils.settings.ntrials_finite,
-    n_ang: int = utils.settings.n_ang_rotate,
-    ang_range: list = utils.settings.ang_range_rotate,
-    grsc: float = utils.settings.grsc,
-    N: int = utils.settings.N,
-    phbins: int = utils.settings.phbins,
+    orient_type: str,
+    meanoff_type: str,
+    n_trajecs: int = settings.ntrials_finite,
+    n_ang: int = settings.n_ang_rotate,
+    ang_range: list = settings.ang_range_rotate,
+    grsc: float = settings.grsc,
+    N: int = settings.N,
+    phbins: int = settings.phbins,
     hypothesis: str = None,
     size: float = 60.,
     overwrite: bool = False
 ):
-    """_summary_
-
-    Args:
-        n_trajecs (int, optional): _description_. Defaults to settings.ntrials_finite.
-        n_ang (int, optional): _description_. Defaults to settings.n_ang_rotate.
-        ang_range (list, optional): _description_. Defaults to [0, np.pi].
-        grsc (float, optional): _description_. Defaults to settings.grsc.
-        N (int, optional): _description_. Defaults to settings.N.
-        phbins (int, optional): _description_. Defaults to settings.phbins.
-        hypothesis (str): _description_. Defaults to None.
-
-    Returns:
-        _type_: _description_
-    """
     # check for valid hypothesis argument
     assert hypothesis in ["repsupp", "clustering", "conjunctive"], \
         "hypothesis must be 'repsupp', 'clustering', or 'conjunctive'"
+    # check for valid mean offset argument
+    assert meanoff_type in ["uniform", "zero"], \
+        "meanoff_type must be 'uniform', or 'zero'"
+    assert orient_type in ["random", "zero", "shuffle"], \
+        "orient_type must be 'random', 'zero', or 'shuffle"
     print("performing rotation simulations for ", hypothesis)
-    
+
     circfr_arr = np.zeros((n_trajecs, n_ang, phbins))
     sqfr_arr = np.zeros((n_trajecs, n_ang, phbins))
     circhexes = np.zeros((n_trajecs, n_ang))
@@ -103,182 +53,182 @@ def compare_rotate_samegrid(
     # create list of angles from desired range
     ang_list = np.linspace(ang_range[0], ang_range[1], num=n_ang)
 
+    # orientation of grid axes
+    if orient_type == "zero":
+        orient = 0.
+    else:
+        orient = 2*np.pi*np.random.rand()
+
+    shufforient = True if orient_type == "shuffle" else False
+
     # prepare firing rate and hexasymmetry filenames for saving
     os.makedirs(
-        os.path.join(utils.settings.loc, hypothesis, "rotate"),
+        os.path.join(settings.loc, hypothesis, "rotate", meanoff_type),
         exist_ok=True
     )
     circfr_fname = os.path.join(
-        utils.settings.loc,
+        settings.loc,
         hypothesis,
         "rotate",
-        f"{traj_type}",
+        meanoff_type,
+        f"{orient_type}",
         f"circfr_rotate_{size}.pkl"
     )
     sqfr_fname = os.path.join(
-        utils.settings.loc,
+        settings.loc,
         hypothesis,
         "rotate",
-        f"{traj_type}",
+        meanoff_type,
+        f"{orient_type}",
         f"sqfr_rotate_{size}.pkl"
     )
     circhex_fname = os.path.join(
-        utils.settings.loc,
+        settings.loc,
         hypothesis,
         "rotate",
-        f"{traj_type}",
+        meanoff_type,
+        f"{orient_type}",
         f"circhex_rotate_{size}.pkl"
     )
     sqhex_fname = os.path.join(
-        utils.settings.loc,
+        settings.loc,
         hypothesis,
         "rotate",
-        f"{traj_type}",
+        meanoff_type,
+        f"{orient_type}",
         f"sqhex_rotate_{size}.pkl"
     )
     circpathhex_fname = os.path.join(
-        utils.settings.loc,
+        settings.loc,
         hypothesis,
         "rotate",
-        f"{traj_type}",
+        meanoff_type,
+        f"{orient_type}",
         f"circpathhex_rotate_{size}.pkl"
     )
     sqpathhex_fname = os.path.join(
-        utils.settings.loc,
+        settings.loc,
         hypothesis,
         "rotate",
-        f"{traj_type}",
+        meanoff_type,
+        f"{orient_type}",
         f"sqpathhex_rotate_{size}.pkl"
     )
 
+    def process_trajec(i):
+        trial_data = {
+            'circfr_trial': np.zeros((n_ang, phbins)),
+            'sqfr_trial': np.zeros((n_ang, phbins)),
+            'circhexes_trial': np.zeros((n_ang)),
+            'sqhexes_trial': np.zeros((n_ang)),
+            'circpathhexes_trial': np.zeros((n_ang)),
+            'sqpathhexes_trial': np.zeros((n_ang)),
+        }
+
+        if meanoff_type == "zero":
+            meanoff = (0, 0)
+        elif meanoff_type == "uniform":
+            meanoff = (np.random.uniform(0, 1), np.random.uniform(0, 1))
+        if hypothesis == "repsupp" or hypothesis == "conjunctive":
+            ox, oy = gen_offsets(N=settings.N, kappacl=0., meanoff=meanoff)
+        elif hypothesis == "clustering":
+            ox, oy = gen_offsets(
+                N=settings.N, kappacl=settings.kappa_si, meanoff=meanoff
+            )
+        oxr, oyr = convert_to_rhombus(ox, oy)
+        circle_trajec = traj(
+            dt=settings.dt,
+            tmax=settings.tmax,
+            sp=settings.speed,
+            init_dir=settings.init_dir,
+            dphi=settings.dphi,
+            bound=size,
+            sq_bound=False
+        )
+        square_trajec = traj(
+            dt=settings.dt,
+            tmax=settings.tmax,
+            sp=settings.speed,
+            init_dir=settings.init_dir,
+            dphi=settings.dphi,
+            bound=size,
+            sq_bound=True
+        )
+        trajecs = [circle_trajec, square_trajec]
+        for k, trajec in enumerate(trajecs):
+            for j, ang in enumerate(ang_list):
+                if hypothesis == "clustering":
+                    _, mean_fr, _, summed_fr = gridpop_clustering(
+                        N,
+                        grsc,
+                        phbins,
+                        traj=rotate_traj(trajec=trajec, theta=ang),
+                        oxr=oxr,
+                        oyr=oyr
+                    )
+                elif hypothesis == "conjunctive":
+                    _, mean_fr, _, summed_fr = gridpop_conj(
+                        N,
+                        grsc,
+                        phbins,
+                        traj=rotate_traj(trajec=trajec, theta=ang),
+                        oxr=oxr,
+                        oyr=oyr,
+                        ang=orient,
+                        propconj=settings.propconj_i,
+                        kappa=settings.kappac_i,
+                        jitter=settings.jitterc_i,
+                        shufforient=shufforient
+                    )
+                else:
+                    _, mean_fr, _, summed_fr = gridpop_repsupp(
+                        N,
+                        grsc,
+                        phbins,
+                        traj=rotate_traj(trajec=trajec, theta=ang),
+                        oxr=oxr,
+                        oyr=oyr,
+                        tau_rep=settings.tau_rep,
+                        w_rep=settings.w_rep
+                    )
+                if k == 0:
+                    trial_data['circfr_trial'][j, :] = mean_fr
+                    trial_data['circhexes_trial'][j] = get_hexsym(
+                        summed_fr,
+                        rotate_traj(trajec=trajec, theta=ang)
+                    )
+                    trial_data['circpathhexes_trial'][j] = get_pathsym(
+                        rotate_traj(trajec=trajec, theta=ang)
+                    )
+                elif k == 1:
+                    trial_data['sqfr_trial'][j, :] = mean_fr
+                    trial_data['sqhexes_trial'][j] = get_hexsym(
+                        summed_fr,
+                        rotate_traj(trajec=trajec, theta=ang)
+                    )
+                    trial_data['sqpathhexes_trial'][j] = get_pathsym(
+                        rotate_traj(trajec=trajec, theta=ang)
+                    )
+
+        return trial_data
+
     # if directory exists, assume data already exists and load
     if not os.path.exists(circfr_fname) or overwrite:
-    # if not os.listdir(os.path.join(settings.loc, hypothesis, "rotate")):
-        # if data does not exist, load trajectories and begin population 
-        # simulations
-        for i in range(n_trajecs):
-            if i == 1:
-                start_time = time.monotonic()
-            # load offsets, initialise fr and hexasymmetry arrays
-            # oxr, oyr = get_offsets(hypothesis, tiled=True)
-            if hypothesis == "repsupp" or hypothesis == "conjunctive":
-                ox, oy = gen_offsets(N=N, kappacl=0.)
-            elif hypothesis == "clustering":
-                ox, oy = gen_offsets(N=utils.settings.N, kappacl=utils.settings.kappa_sr)
-            oxr, oyr = convert_to_rhombus(ox, oy)
-            saveloc = os.path.join(
-                utils.settings.loc,
-                hypothesis,
-                "rotate",
-                f"{traj_type}",
-                f"{i}",
-            )
-            circle_trajec = traj(
-                dt=utils.settings.dt,
-                tmax=utils.settings.tmax,
-                sp=utils.settings.speed,
-                init_dir=utils.settings.init_dir,
-                dphi=utils.settings.dphi,
-                bound=size,
-                sq_bound=False
-            )
-            square_trajec = traj(
-                dt=utils.settings.dt,
-                tmax=utils.settings.tmax,
-                sp=utils.settings.speed,
-                init_dir=utils.settings.init_dir,
-                dphi=utils.settings.dphi,
-                bound=size,
-                sq_bound=True
-            )
-            trajecs = [circle_trajec, square_trajec]
-            for k, trajec in enumerate(trajecs):
-                for j, ang in enumerate(ang_list):
-                    if j == 1:
-                        start_time2 = time.monotonic()
-                    if hypothesis == "clustering":
-                        _, mean_fr, _, summed_fr = gridpop_clustering(
-                            N,
-                            grsc,
-                            phbins,
-                            traj=rotate_traj(trajec=trajec, theta=ang),
-                            oxr=oxr,
-                            oyr=oyr
-                        )
-                    elif hypothesis == "conjunctive":
-                        _, mean_fr, _, summed_fr = gridpop_conj(
-                            N,
-                            grsc,
-                            phbins,
-                            traj=rotate_traj(trajec=trajec, theta=ang),
-                            oxr=oxr,
-                            oyr=oyr,
-                            propconj=utils.settings.propconj_r,
-                            kappa=utils.settings.kappac_r,
-                            jitter=utils.settings.jitterc_r
-                        )
-                    else:
-                        _, mean_fr, _, summed_fr = gridpop_repsupp(
-                            N,
-                            grsc,
-                            phbins,
-                            traj=rotate_traj(trajec=trajec, theta=ang),
-                            oxr=oxr,
-                            oyr=oyr
-                        )
-                    if k == 0:
-                        circfr_arr[i, j, :] = mean_fr
-                        circhexes[i, j] = get_hexsym(
-                            summed_fr,
-                            rotate_traj(trajec=trajec, theta=ang)
-                        )
-                        circpathhexes[i, j] = get_pathsym(
-                            rotate_traj(trajec=trajec, theta=ang)
-                        )
-                    elif k == 1:
-                        sqfr_arr[i, j, :] = mean_fr
-                        sqhexes[i, j] = get_hexsym(
-                            summed_fr,
-                            rotate_traj(trajec=trajec, theta=ang)
-                        )
-                        sqpathhexes[i, j] = get_pathsym(
-                            rotate_traj(trajec=trajec, theta=ang)
-                        )
-                    # trajtype = "circle" if k == 0 else "square"
-                    # fname = os.path.join(
-                    # saveloc,
-                    # f"{trajtype}{size}_{np.rad2deg(ang):.0f}.pkl"
-                    # )
-                    # os.makedirs(
-                    #     os.path.dirname(fname),
-                    #     exist_ok=True
-                    # )
-                    # with open(fname, "wb") as f:
-                    #     pickle.dump(mean_fr, f)
-                    if j == 1:
-                        end_time2 = time.monotonic()
-                        print(
-                            "One rotation simulation finished in: ", 
-                            timedelta(seconds=end_time2 - start_time2)
-                        )
-                        print(
-                            f"{n_ang} simulations estimated in: ", 
-                            timedelta(
-                                seconds=(end_time2 - start_time2) * n_ang
-                            )
-                        )
-            # else:
-            #     print(f"{set_folder} simulation already exists")
-            if i == 1:
-                end_time = time.monotonic()
-                print(
-                    "One simulation finished in: ", 
-                    timedelta(seconds=end_time - start_time)
-                )
-                print(
-                    f"{n_trajecs} simulations estimated in: ", 
-                    timedelta(seconds=(end_time - start_time) * n_trajecs)
-                )
+        results = Parallel(n_jobs=50)(
+            delayed(
+                process_trajec
+            )(i) for i in tqdm(range(n_trajecs))
+        )
+
+        # Combine results
+        for i, result in enumerate(results):
+            circfr_arr[i, :, :] = result['circfr_trial']
+            sqfr_arr[i, :, :] = result['sqfr_trial']
+            circhexes[i, :] = result['circhexes_trial']
+            sqhexes[i, :] = result['sqhexes_trial']
+            circpathhexes[i, :] = result['circpathhexes_trial']
+            sqpathhexes[i, :] = result['sqpathhexes_trial']
+
         os.makedirs(os.path.dirname(circfr_fname), exist_ok=True)
         os.makedirs(os.path.dirname(sqfr_fname), exist_ok=True)
         os.makedirs(os.path.dirname(circhex_fname), exist_ok=True)
@@ -300,162 +250,27 @@ def compare_rotate_samegrid(
     else:
         print("rotate simulations already exist")
 
-    # plotting
-    deg_list = np.rad2deg(ang_list)
-    rot_folders = os.path.join(utils.settings.loc, hypothesis, "rotate")
-    idxs = [0, 1, 2, 3]
-    circfr = pickle.load(open(circfr_fname, "rb"))
-    sqfr = pickle.load(open(sqfr_fname, "rb"))
-    circhexes = pickle.load(open(circhex_fname, "rb"))
-    sqhexes = pickle.load(open(sqhex_fname, "rb"))
-    circpathhexes = np.load(circpathhex_fname, allow_pickle=True)
-    sqpathhexes = np.load(sqpathhex_fname, allow_pickle=True)
-    direc_binned = np.linspace(-np.pi, np.pi, utils.settings.phbins + 1)
-    angles = 180. / np.pi * \
-                (direc_binned[:-1] + direc_binned[1:]) / 2.
-
-    # calculate path-normalised hexasymmetry
-    circhexes_normed = circhexes / circpathhexes
-    sqhexes_normed = sqhexes / sqpathhexes
-
-    plt_rot_fr(
-        circfr,
-        idxs,
-        deg_list,
-        os.path.join(
-            utils.settings.loc,
-            "plots",
-            hypothesis,
-            "rotate",
-            f"{traj_type}",
-            f"circfr_{size}_rotate_plot.png"
-        ),
-        size=size
-    )
-    plt_rot_fr(
-        sqfr,
-        idxs,
-        deg_list,
-        os.path.join(
-            utils.settings.loc,
-            "plots",
-            hypothesis,
-            "rotate",
-            f"{traj_type}",
-            f"sqfr_{size}_rotate_plot.png"
-        ),
-        size=size
-    )
-
-    # plot hexasymmetry
-    plt.figure(figsize = (12, 4))
-    plt.rcParams.update({'font.size': utils.settings.fs})
-    plt.plot(
-        deg_list,
-        circhexes.mean(axis=0),
-        label=f"circle_{size}"
-    )
-    plt.fill_between(
-        deg_list,
-        circhexes.mean(axis=0) -
-        np.std(circhexes, axis=0) / np.sqrt(circhexes.shape[0]),
-        circhexes.mean(axis=0) +
-        np.std(circhexes, axis=0) / np.sqrt(circhexes.shape[0]),
-        alpha=0.2,
-    )
-    plt.plot(
-        deg_list,
-        sqhexes.mean(axis=0),
-        label=f"square_{size}"
-    )
-    plt.fill_between(
-        deg_list,
-        sqhexes.mean(axis=0) -
-        np.std(sqhexes, axis=0) / np.sqrt(sqhexes.shape[0]),
-        sqhexes.mean(axis=0) +
-        np.std(sqhexes, axis=0) / np.sqrt(sqhexes.shape[0]),
-        alpha=0.2,
-    )
-    plt.legend(prop={'size': 14})
-    plt.title(hypothesis)
-    plt.tight_layout()
-    plt.xlabel("Rotation angle (degrees)")
-    plt.xticks(np.linspace(0, 180, 19))
-    plt.ylabel("Hexasymmetry (a.u.)")
-    plt.savefig(
-        os.path.join(
-            utils.settings.loc,
-            "plots",
-            hypothesis,
-            "rotate",
-            f"{traj_type}",
-            f"hex_{size}_rotate.png"
-        )
-    )
-
-    # plot path-normalised hexasymmetry
-    plt.figure(figsize = (12, 4))
-    plt.rcParams.update({'font.size': utils.settings.fs})
-    plt.plot(
-        deg_list,
-        circhexes_normed.mean(axis=0),
-        label=f"circle_{size}"
-    )
-    plt.fill_between(
-        deg_list,
-        circhexes_normed.mean(axis=0) -
-        np.std(circhexes_normed, axis=0) / np.sqrt(circhexes_normed.shape[0]),
-        circhexes_normed.mean(axis=0) +
-        np.std(circhexes_normed, axis=0) / np.sqrt(circhexes_normed.shape[0]),
-        alpha=0.2,
-    )
-    plt.plot(
-        deg_list,
-        sqhexes_normed.mean(axis=0),
-        label=f"square_{size}"
-    )
-    plt.fill_between(
-        deg_list,
-        sqhexes_normed.mean(axis=0) -
-        np.std(sqhexes_normed, axis=0) / np.sqrt(sqhexes_normed.shape[0]),
-        sqhexes_normed.mean(axis=0) +
-        np.std(sqhexes_normed, axis=0) / np.sqrt(sqhexes_normed.shape[0]),
-        alpha=0.2,
-    )
-    plt.legend(prop={'size': 14})
-    plt.title(hypothesis)
-    plt.tight_layout()
-    plt.xlabel("Rotation angle (degrees)")
-    plt.xticks(np.linspace(0, 180, 19))
-    plt.ylabel("Hexasymmetry (norm) (a.u.)")
-    plt.savefig(
-        os.path.join(
-            utils.settings.loc,
-            "plots",
-            hypothesis,
-            "rotate",
-            f"{traj_type}",
-            f"normedhex_{size}_rotate.png"
-        )
-    )
 
 if __name__ == "__main__":
     start_time = time.monotonic()
-    for traj_type in ["rw"]:
-        for hypothesis in ["conjunctive", "clustering", "repsupp"]:
-            for size in utils.settings.rot_sizes:
-                compare_rotate_samegrid(
-                    traj_type=traj_type,
-                    n_trajecs=utils.settings.ntrials_finite,
-                    n_ang=utils.settings.n_ang_rotate,
-                    ang_range=utils.settings.ang_range_rotate,
-                    N=utils.settings.N,
-                    hypothesis=hypothesis,
-                    size=size
-                )
+    for orient_type in ["random", "shuffle"]:
+        # for hypothesis in ["conjunctive", "clustering", "repsupp"]:
+        for hypothesis in ["conjunctive"]:
+            # for meanoff_type in ["uniform", "zero"]:
+            for meanoff_type in ["zero"]:
+                for size in settings.rot_sizes:
+                    compare_rotate_samegrid(
+                        orient_type=orient_type,
+                        meanoff_type=meanoff_type,
+                        n_trajecs=settings.ntrials_finite,
+                        n_ang=settings.n_ang_rotate,
+                        ang_range=settings.ang_range_rotate,
+                        N=settings.N,
+                        hypothesis=hypothesis,
+                        size=size
+                    )
     end_time = time.monotonic()
     print(
-        "Rotation simulations finished in: ", 
+        "Rotation simulations finished in: ",
         timedelta(seconds=end_time - start_time)
     )
-    

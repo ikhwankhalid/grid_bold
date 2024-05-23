@@ -1,21 +1,23 @@
 """
-This script
+This script calculates the path hexasymmetry T6 in random walks as a function
+of the total number of time steps M, for different values of the tortuosity
+parameter. It then saves the path hexasymmetries as a .pkl file
+"data/outputs/trajectories/step_pathsyms.pkl". The data is used in
+supplementary figure Fig. S1.
 """
 import numpy as np
-from functions.gridfcts import traj, traj_pwl
+from utils.grid_funcs import traj
 from utils.utils import get_pathsym
-import utils.settings as settings
+import settings
 import os
 import pickle
-from numba import jit, njit
+from numba import jit
 import matplotlib.pyplot as plt
 
 
 @jit
 def get_step_pathsyms(n, m_list, dphi=settings.dphi):
-    # random walks
     pathsyms = np.zeros([n, len(m_list)])
-    tmax_list = m_list * settings.dt
     for i in range(n):
         print(i)
         for j, m in enumerate(m_list):
@@ -28,20 +30,14 @@ def get_step_pathsyms(n, m_list, dphi=settings.dphi):
             )
             pathsyms[i, j] = get_pathsym(trajec)
 
-    print(len(trajec[-1]))
-    print(tmax_list)
-
     return pathsyms
 
 
 if __name__ == "__main__":
     n = 500
-    # m_list = np.logspace(0, 5, 100, base=10.).astype(int)
-    m_list = np.logspace(0, 3, 100, base=10.).astype(int)
-    print(m_list)
-
+    m_list = np.logspace(0, 5, 100, base=10.).astype(int)
     tort_list = [0., 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1]
-    
+
     pathsyms1 = get_step_pathsyms(n, m_list, tort_list[0])
     pathsyms2 = get_step_pathsyms(n, m_list, tort_list[1])
     pathsyms3 = get_step_pathsyms(n, m_list, tort_list[2])
@@ -62,9 +58,9 @@ if __name__ == "__main__":
     with open(settings.m_list_fname, 'wb') as f:
         pickle.dump(m_list, f)
 
-    x = lambda a : 1 / np.sqrt(a)
+    def x(a): return 1 / np.sqrt(a)
 
-    plt.figure(figsize=(24,14))
+    plt.figure(figsize=(24, 14))
     plt.rcParams.update({'font.size': settings.fs})
     plt.scatter(
         m_list,
@@ -130,7 +126,7 @@ if __name__ == "__main__":
         linewidth=3
     )
     plt.plot(
-        m_list, 
+        m_list,
         np.ones(len(m_list)),
         label=r"$T_0$",
         color="black",
@@ -141,7 +137,7 @@ if __name__ == "__main__":
     plt.xlabel("Number of time steps M")
     plt.xscale('log')
     plt.yscale('log')
-    plt.xticks([10**i for i in range(0,6)])
+    plt.xticks([10**i for i in range(0, 6)])
     plt.xlim(8 * 10**-1, 2 * 10**5)
     plt.title("Mean over {} random walks".format(n))
     plt.legend()
@@ -149,7 +145,8 @@ if __name__ == "__main__":
     plt.savefig(settings.step_plot_fname)
 
 tort_pathsyms = {}
-pathlist = [pathsyms1, pathsyms2, pathsyms3, pathsyms4, pathsyms5, pathsyms6, pathsyms7, pathsyms8, pathsyms9, pathsyms10, pathsyms11]
+pathlist = [pathsyms1, pathsyms2, pathsyms3, pathsyms4, pathsyms5,
+            pathsyms6, pathsyms7, pathsyms8, pathsyms9, pathsyms10, pathsyms11]
 for i, path in enumerate(pathlist):
     tort_pathsyms[f"{np.round(0. + i*0.01, 2)}"] = path
 
