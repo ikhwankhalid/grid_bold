@@ -9,18 +9,20 @@ Ikhwan Bin Khalid, Eric T. Reifenstein, Naomi Auer, Lukas Kunz, Richard Kempter.
 
 ##### 2. Some "Produce" .py files require "Subroutine" scripts to be run first. These are:
 
-Produce_mainfigure_clustering.py
-- Subroutine_mainfigure_clustering_panel_T.py
-- Subroutine_mainfigure_clustering_randfield.py
-
-Produce_mainfigure_repsupp.py
-- Subroutine_mainfigure_repsupp_paramsearch.py
-
-Produce_mainfigure_summary.py
-- Subroutine_mainfigure_summary_data.py
-
-Produce_suppfigure_boundaries.py
-- Subroutine_suppfigure_boundaries_rotate.py
-- Subroutine_suppfigure_boundaries_size.py
+|            **Script**            |                  **Subroutine**                 |
+|:--------------------------------:|:-----------------------------------------------:|
+| Produce_mainfigure_clustering.py |  Subroutine_mainfigure_clustering_panel_T.py  |
+|                                  | Subroutine_mainfigure_clustering_randfield.py |
+|                                  |                                                 |
+| Produce_mainfigure_repsupp.py    |  Subroutine_mainfigure_repsupp_paramsearch.py |
+|                                  |                                                 |
+| Produce_mainfigure_summary.py    |     Subroutine_mainfigure_summary_data.py     |
+|                                  |                                                 |
+| Produce_suppfigure_boundaries.py |   Subroutine_suppfigure_boundaries_rotate.py  |
+|                                  |    Subroutine_suppfigure_boundaries_size.py   |
 
 ##### 3. ".py" files starting with "misc" are not used in the figures of the manuscript. They are used to generate additional data or figures for the purpose of exploring the model.
+
+---
+Please contact me if you have any questions:
+ikhwankhalid92@gmail.com
