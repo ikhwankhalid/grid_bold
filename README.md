@@ -1,4 +1,4 @@
-This repo contains the code for the manuscript:
+This repo contains the codebase for the manuscript:
 
 
 ## Quantitative Modeling of the Emergence of Macroscopic Grid-like Representations
@@ -7,7 +7,7 @@ This repo contains the code for the manuscript:
 
 **Authors:** Ikhwan Bin Khalid, Eric T. Reifenstein, Naomi Auer, Lukas Kunz, Richard Kempter  
 
-**Publication:** bioRxiv 2022.12.20.521210  
+**Publication:** bioRxiv 2022.12.20.521210 (under review at eLife)
 
 **DOI:** [10.1101/2022.12.20.521210](https://doi.org/10.1101/2022.12.20.521210)
 
@@ -22,37 +22,29 @@ This repo contains the code for the manuscript:
 
 
 ### 1. Generate Manuscript Figures
-
-
-
-**Files:** `.py` files starting with "Produce"  
+**Files:** `.py` files starting with `"Produce_"`  
 
 **Purpose:** These files will compile the figures for the manuscript.
 
 
 
 ### 2. Required Subroutines
-
-
-
-Some "Produce" `.py` files require "Subroutine" scripts to be run first. In the case of the clustering figure, the subroutines generate '.png' files which were combined with the main figure using Inkscape. Below is a list of these files and their required subroutines:
+Some `"Produce_"` `.py` files require `"Subroutine_"` scripts to be run first to generate the required data. In the case of the clustering figure, the subroutines generate '.png' files which were combined with the main figure using Inkscape. Below is a list of these files and their required subroutines:
 
 
 
 | **Script**                       | **Subroutine(s)**                                                                         |
 |----------------------------------|-------------------------------------------------------------------------------------------|
+| Produce_mainfigure_conjunctive.py    | Subroutine_mainfigure_conjunctive_paramsearch.py |
+| Produce_mainfigure_repsupp.py | Subroutine_mainfigure_repsupp_paramsearch.py |
 | Produce_mainfigure_clustering.py | Subroutine_mainfigure_clustering_panel_T.py <br>Subroutine_mainfigure_clustering_randfield.py |
-| Produce_mainfigure_repsupp.py    | Subroutine_mainfigure_repsupp_paramsearch.py                                              |
-| Produce_mainfigure_summary.py    | Subroutine_mainfigure_summary_data.py                                                     |
-| Produce_suppfigure_boundaries.py | Subroutine_suppfigure_boundaries_rotate.py <br>Subroutine_suppfigure_boundaries_size.py       |
+| Produce_mainfigure_summary.py | Subroutine_mainfigure_summary_data.py |
+| Produce_suppfigure_boundaries.py | Subroutine_suppfigure_boundaries_rotate.py <br>Subroutine_suppfigure_boundaries_size.py |
 
 
 
 ### 3. Miscellaneous Scripts
-
-
-
-**Files:** `.py` files starting with "misc"  
+**Files:** `.py` files starting with `"misc_"` 
 
 **Purpose:** These scripts are not used for the figures in the manuscript. They generate additional data or figures for model exploration.
 
