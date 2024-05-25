@@ -1,9 +1,6 @@
 This repo contains the codebase for the manuscript:
 
-
 ## Quantitative Modeling of the Emergence of Macroscopic Grid-like Representations
-
-
 
 **Authors:** Ikhwan Bin Khalid, Eric T. Reifenstein, Naomi Auer, Lukas Kunz, Richard Kempter  
 
@@ -11,14 +8,8 @@ This repo contains the codebase for the manuscript:
 
 **DOI:** [10.1101/2022.12.20.521210](https://doi.org/10.1101/2022.12.20.521210)
 
-
-
 ---
-
-
-
 ## How to Use the Scripts
-
 
 
 ### 1. Generate Manuscript Figures
@@ -27,11 +18,8 @@ This repo contains the codebase for the manuscript:
 **Purpose:** These files will compile the figures for the manuscript.
 
 
-
 ### 2. Required Subroutines
 Some `"Produce_"` `.py` files require `"Subroutine_"` scripts to be run first to generate the required data. In the case of the clustering figure, the subroutines generate '.png' files which were combined with the main figure using Inkscape. Below is a list of these files and their required subroutines:
-
-
 
 | **Script**                       | **Subroutine(s)**                                                                         |
 |----------------------------------|-------------------------------------------------------------------------------------------|
@@ -42,12 +30,10 @@ Some `"Produce_"` `.py` files require `"Subroutine_"` scripts to be run first to
 | Produce_suppfigure_boundaries.py | Subroutine_suppfigure_boundaries_rotate.py <br>Subroutine_suppfigure_boundaries_size.py |
 
 
-
 ### 3. Miscellaneous Scripts
 **Files:** `.py` files starting with `"misc_"` 
 
 **Purpose:** These scripts are not used for the figures in the manuscript. They generate additional data or figures for model exploration.
-
 
 
 ### 4. Settings
@@ -58,11 +44,7 @@ Some `"Produce_"` `.py` files require `"Subroutine_"` scripts to be run first to
 
 ---
 
-
-
 ## Contact
-
-
 
 For any questions, please contact:  
 
