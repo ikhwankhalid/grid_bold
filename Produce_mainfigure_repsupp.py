@@ -12,9 +12,7 @@ from utils.utils import (
     get_pathsym,
     convert_to_rhombus,
     adap_euler,
-    ax_pos,
-    bin_avg,
-    smooth_with_gaussian
+    ax_pos
 )
 from utils.grid_funcs import (
     traj, gridpop_repsupp, traj_pwl, traj_star2 as traj_star, gen_offsets

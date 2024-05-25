@@ -133,21 +133,6 @@ pathsyms_fname = os.path.join(
     "trajectories",
     "pathsyms.pkl"
 )
-step_pathsyms_fname = os.path.join(
-    loc,
-    "trajectories",
-    "step_pathsyms.pkl"
-)
-step_plot_fname = os.path.join(
-    loc,
-    "trajectories",
-    "step_pathsyms.png"
-)
-step_dict_fname = os.path.join(
-    loc,
-    "trajectories",
-    "step_pathsyms.pkl"
-)
 m_list_fname = os.path.join(
     loc,
     "trajectories",
