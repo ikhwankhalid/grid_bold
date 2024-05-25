@@ -2,9 +2,12 @@ This repo contains the code for the manuscript "Quantitative modeling of the eme
 
 Ikhwan Bin Khalid, Eric T. Reifenstein, Naomi Auer, Lukas Kunz, Richard Kempter. - Quantitative modeling of the emergence of macroscopic grid-like representations. bioRxiv 2022.12.20.521210; doi: https://doi.org/10.1101/2022.12.20.521210
 
-.py files starting with "Produce" will compile the main or supplementary figures of the manuscript.
+---
+#### How to use the scripts:
 
-Some "Produce" .py files require subroutines to be run first. These are:
+##### 1. ".py" files starting with "Produce" will compile the main or supplementary figures of the manuscript.
+
+##### 2. Some "Produce" .py files require "Subroutine" scripts to be run first. These are:
 
 Produce_mainfigure_clusutering.py
 - Subroutine_mainfigure_clustering_panel_T.py
@@ -19,3 +22,5 @@ Produce_mainfigure_summary.py
 Produce_suppfigure_boundaries.py
 - Subroutine_suppfigure_boundaries_rotate.py
 - Subroutine_suppfigure_boundaries_size.py
+
+##### 3. ".py" files starting with "misc" are not used in the figures of the manuscript. They are used to generate additional data or figures for the purpose of exploring the model.
