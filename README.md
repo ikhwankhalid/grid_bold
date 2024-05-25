@@ -9,7 +9,7 @@ Ikhwan Bin Khalid, Eric T. Reifenstein, Naomi Auer, Lukas Kunz, Richard Kempter.
 
 ##### 2. Some "Produce" .py files require "Subroutine" scripts to be run first. These are:
 
-|            **Script**            |                  **Subroutine**                 |
+|            **Script**            |                  **Subroutine(s)**                 |
 |:--------------------------------:|:-----------------------------------------------:|
 | Produce_mainfigure_clustering.py |  Subroutine_mainfigure_clustering_panel_T.py  |
 |                                  | Subroutine_mainfigure_clustering_randfield.py |
