@@ -5,11 +5,11 @@ Ikhwan Bin Khalid, Eric T. Reifenstein, Naomi Auer, Lukas Kunz, Richard Kempter.
 ---
 #### How to use the scripts:
 
-##### 1. ".py" files starting with "Produce" will compile the main or supplementary figures of the manuscript.
+##### 1. ".py" files starting with "Produce" will compile the figures of the manuscript.
 
 ##### 2. Some "Produce" .py files require "Subroutine" scripts to be run first. These are:
 
-Produce_mainfigure_clusutering.py
+Produce_mainfigure_clustering.py
 - Subroutine_mainfigure_clustering_panel_T.py
 - Subroutine_mainfigure_clustering_randfield.py
 
