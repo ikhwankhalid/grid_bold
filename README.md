@@ -1,13 +1,43 @@
-This repo contains the code for the manuscript "Quantitative modeling of the emergence of macroscopic grid-like representations".
+This repo contains the code for the manuscript:
 
-Ikhwan Bin Khalid, Eric T. Reifenstein, Naomi Auer, Lukas Kunz, Richard Kempter. - Quantitative modeling of the emergence of macroscopic grid-like representations. bioRxiv 2022.12.20.521210; doi: https://doi.org/10.1101/2022.12.20.521210
+
+## Quantitative Modeling of the Emergence of Macroscopic Grid-like Representations
+
+
+
+**Authors:** Ikhwan Bin Khalid, Eric T. Reifenstein, Naomi Auer, Lukas Kunz, Richard Kempter  
+
+**Publication:** bioRxiv 2022.12.20.521210  
+
+**DOI:** [10.1101/2022.12.20.521210](https://doi.org/10.1101/2022.12.20.521210)
+
+
 
 ---
-#### How to use the scripts:
 
-##### 1. ".py" files starting with "Produce" will compile the figures of the manuscript.
 
-##### 2. Some "Produce" .py files require "Subroutine" scripts to be run first. These are:
+
+## How to Use the Scripts
+
+
+
+### 1. Generate Manuscript Figures
+
+
+
+**Files:** `.py` files starting with "Produce"  
+
+**Purpose:** These files will compile the figures for the manuscript.
+
+
+
+### 2. Required Subroutines
+
+
+
+Some "Produce" `.py` files require subroutine scripts to be run first. Below is a list of these files and their required subroutines:
+
+
 
 | **Script**                       | **Subroutine(s)**                                                                         |
 |----------------------------------|-------------------------------------------------------------------------------------------|
@@ -16,8 +46,32 @@ Ikhwan Bin Khalid, Eric T. Reifenstein, Naomi Auer, Lukas Kunz, Richard Kempter.
 | Produce_mainfigure_summary.py    | Subroutine_mainfigure_summary_data.py                                                     |
 | Produce_suppfigure_boundaries.py | Subroutine_suppfigure_boundaries_rotate.py <br>Subroutine_suppfigure_boundaries_size.py       |
 
-##### 3. ".py" files starting with "misc" are not used in the figures of the manuscript. They are used to generate additional data or figures for the purpose of exploring the model.
+
+
+### 3. Miscellaneous Scripts
+
+
+
+**Files:** `.py` files starting with "misc"  
+
+**Purpose:** These scripts are not used for the figures in the manuscript. They generate additional data or figures for model exploration.
+
+
+
+### 4. Settings
+
+**Files:** `settings.py` 
+
+**Purpose:** This file contains hyperparameters for all scripts, including grid cell parameters.
 
 ---
-Please contact me if you have any questions:
-ikhwankhalid92@gmail.com
+
+
+
+## Contact
+
+
+
+For any questions, please contact:  
+
+**Email:** ikhwankhalid92@gmail.com
