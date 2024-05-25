@@ -35,7 +35,7 @@ This repo contains the code for the manuscript:
 
 
 
-Some "Produce" `.py` files require subroutine scripts to be run first. Below is a list of these files and their required subroutines:
+Some "Produce" `.py` files require "Subroutine" scripts to be run first. In the case of the clustering figure, the subroutines generate '.png' files which were combined with the main figure using Inkscape. Below is a list of these files and their required subroutines:
 
 
 
