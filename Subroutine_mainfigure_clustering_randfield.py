@@ -19,8 +19,8 @@ n = 100
 randfield = np.random.rand(n, n)
 saveloc = os.path.join(
     settings.loc,
-    "plots",
     "clustering",
+    "fig4",
     "randfield.png"
 )
 
@@ -1282,4 +1282,4 @@ ax_pos(ax_phasesgrid, -0.02, 0.02, 1.3, 1.3)
 ax_pos(ax_ncells, -0.04, 0, 1, 0.85)
 ax_pos(ax_ncells2, -0.0575, -0.2, 0.703, 1)
 ax_pos(ax_kappas, -0.07, -0.04, 1, 1)
-plt.savefig(saveloc)
+plt.savefig(saveloc, dpi=300)

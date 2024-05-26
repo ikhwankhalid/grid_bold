@@ -232,7 +232,7 @@ def sim_bnds(
     plt.legend(prop={'size': 0.7 * settings.fs})
     plt.tight_layout()
     os.makedirs(os.path.dirname(hexplotloc), exist_ok=True)
-    plt.savefig(hexplotloc)
+    plt.savefig(hexplotloc, dpi=300)
     plt.close()
 
     # get path symmetry plot
@@ -272,7 +272,7 @@ def sim_bnds(
     plt.tight_layout()
 
     os.makedirs(os.path.dirname(pathhexplotloc), exist_ok=True)
-    plt.savefig(pathhexplotloc)
+    plt.savefig(pathhexplotloc, dpi=300)
     plt.close()
 
 

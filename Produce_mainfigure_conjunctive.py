@@ -1,12 +1,12 @@
 import os
 import pickle
-from math import isinf
-
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.special as sc
 import settings
+import matplotlib as mpl
+from math import isinf
 from utils.grid_funcs import gen_offsets, gridpop_conj, traj, traj_pwl
 from joblib import Parallel, delayed
 from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -19,7 +19,7 @@ from utils.utils import (
     grid_meanfr
 )
 
-matplotlib.use('Agg')
+mpl.rcParams['figure.dpi'] = 300
 plt.box(False)
 
 ###############################################################################
@@ -1330,7 +1330,6 @@ plt.subplots_adjust(wspace=0.60, hspace=1.5)
 
 ax_pos(ax, 0.03, -0.01, 1.1, 1.1)
 ax_pos(ax9, -0.105, 0, 3.7, 2.7)
-# ax_pos(ax9, -0.105, 0, 3.3, 2.4)
 tuning_axs = [ax3_tuning, ax4_tuning, ax5_tuning]
 for ax_tuning in tuning_axs:
     ax_pos(ax_tuning, 0, 0, 2, 2)
@@ -1396,10 +1395,6 @@ posrw.set_points(pointsrw)
 ax_star_traj.set_position(posstar)
 ax_pwl_traj.set_position(pospwl)
 ax_rw_traj.set_position(posrw)
-
-# ax_pos(ax, 0, 0, 1., 1.)
-# ax_pos(ax2, -0.02, -0.01, 0.65, 0.65)
-# ax_pos(ax2b, -0.12, -0.01, 0.65, 0.65)
 
 ax_pos(ax, 0, 0, 1., 1.)
 ax_pos(ax2, -0.02, -0.01, 0.65, 0.65)
