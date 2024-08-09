@@ -118,7 +118,7 @@ stds = np.rad2deg(np.sqrt(deg_factor))
 approx = np.rad2deg(1/np.sqrt(kappacs))
 meanvec = np.mean(alldata, axis=0)
 
-fig = plt.figure(figsize=(12, 9))
+fig = plt.figure(figsize=(14, 11))
 plt.rcParams.update({'font.size': settings.fs})
 spec = fig.add_gridspec(
     ncols=2,
@@ -128,7 +128,7 @@ spec = fig.add_gridspec(
 
 ax1 = fig.add_subplot(spec[0, 1])
 ax1.plot(
-    kappacs, approx, label=r"Large $\kappa$ approximation", color="#FC6DAB"
+    kappacs, approx, label=r"Large $\kappa_c$ approximation", color="#FC6DAB"
 )
 ax1.plot(kappacs, meanvec, linewidth=3., label="Mean vector", color="#272838")
 ax1.plot(kappacs, stds, label=r"Bessel functions", color="#0ACDFF")
@@ -370,9 +370,20 @@ ax3.text(
     color="green"
 )
 
+plt.subplots_adjust(
+    wspace=0.3,
+    hspace=0.3
+)
+
 ax_pos(ax2, -0.05, -0.02, 0.675, 1.)
 ax_pos(ax3, -0.025, 0.02, 0.95, 0.95)
 ax_pos(ax1, -0.01, 0.02, 0.6, 1.)
 
-plt.show()
-plt.close()
+plot_fname = os.path.join(
+    settings.loc,
+    "conjunctive",
+    "extend_params",
+    "Figure_tuning_widths.png"
+)
+os.makedirs(os.path.dirname(plot_fname), exist_ok=True)
+plt.savefig(plot_fname, dpi=300)

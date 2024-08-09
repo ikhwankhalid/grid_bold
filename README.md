@@ -4,9 +4,9 @@ This repo contains the codebase for the manuscript:
 
 **Authors:** Ikhwan Bin Khalid, Eric T. Reifenstein, Naomi Auer, Lukas Kunz, Richard Kempter  
 
-**Publication:** bioRxiv 2022.12.20.521210 (under review at eLife)
+**Publication:** eLife2024;13:e85742
 
-**DOI:** [10.1101/2022.12.20.521210](https://doi.org/10.1101/2022.12.20.521210)
+**DOI:** https://doi.org/10.7554/eLife.85742
 
 ---
 ## How to Use the Scripts

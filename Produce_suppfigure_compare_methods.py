@@ -33,8 +33,8 @@ from scipy.stats import mannwhitneyu, zscore, norm
 rep = 200
 n_jobs = 50
 savename = os.path.join(
-    settings.sims_dir,
-    "traj_conj_clustering",
+    settings.loc,
+    "compare_methods",
     "traj_hexsyms_noabs_rollnonrw_allmpath.npy"
 )
 nlin = int(settings.rmax / settings.speed / settings.dt)
@@ -467,7 +467,7 @@ labels = []
 
 plt.rcParams.update({'font.size': settings.fs*0.95})
 # Create violin plot
-fig, ax = plt.subplots(figsize=(12, 5))
+fig, ax = plt.subplots(figsize=(19, 7))
 # conjunctive
 add_label(
     ax.violinplot(
@@ -1015,6 +1015,13 @@ print(
     f"CL-corr clust rw:{pvals[35]:.3f}"
 )
 
-# Show the plot
-plt.show()
+plotloc = os.path.join(
+    settings.loc,
+    "compare_methods",
+    "Figure_compare_methods.png"
+)
+
+plt.tight_layout()
+os.makedirs(os.path.dirname(plotloc), exist_ok=True)
+plt.savefig(plotloc, dpi=300)
 plt.close()

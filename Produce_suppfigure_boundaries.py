@@ -553,7 +553,7 @@ for meanoff_type in meanoff_types:
         'Figure_sizes.png'
     )
     os.makedirs(os.path.dirname(savepath), exist_ok=True)
-    plt.savefig(savepath)
+    plt.savefig(savepath, dpi=300)
     plt.close()
 
     ###########################################################################
@@ -821,5 +821,5 @@ for meanoff_type in meanoff_types:
         'Figure_rotation.png'
     )
     os.makedirs(os.path.dirname(savepath), exist_ok=True)
-    plt.savefig(savepath)
+    plt.savefig(savepath, dpi=300)
     plt.close()

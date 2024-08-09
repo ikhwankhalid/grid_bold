@@ -427,7 +427,7 @@ pos1, pos2, pos3 = np.arange(3), np.arange(3)+3.5, np.arange(3)+7.0
 # plt.figure(figsize=(18, 8))
 fig = plt.figure(figsize=(18, 12))
 gs = fig.add_gridspec(2, 3, height_ratios=[8, 4])
-plt.rcParams.update({'font.size': settings.fs})
+plt.rcParams.update({'font.size': settings.fs*1.1})
 
 ax_main = fig.add_subplot(gs[0, :])
 ax_main.set_yscale('log')
@@ -438,7 +438,7 @@ bar_chart(pos3, ofhexes_dict, bar_col)
 plt.xticks(
     np.concatenate((pos1, pos2, pos3)),
     np.concatenate((labels1, labels2, labels3)),
-    fontsize=settings.fs*0.8
+    fontsize=settings.fs*0.9
 )
 plt.ylabel('Hexasymmetry (spk/s)')
 
@@ -578,5 +578,11 @@ overlay_trajongrid(ax_traj_of, x, y, X_bgr, Y_bgr, gr_bgr)
 
 
 plt.tight_layout()
-plt.show()
-plt.close()
+
+plot_fname = os.path.join(
+    settings.loc,
+    "exp_paths",
+    "Figure_exp_hexes.png"
+)
+os.makedirs(os.path.dirname(plot_fname), exist_ok=True)
+plt.savefig(plot_fname, dpi=300)

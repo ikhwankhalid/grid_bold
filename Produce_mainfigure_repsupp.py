@@ -623,6 +623,13 @@ ax_pwl_traj.pcolor(
 # random walk                                                                 #
 ###############################################################################
 print("Random walk")
+ox, oy = np.meshgrid(
+    np.linspace(0, 1, int(np.sqrt(settings.N)), endpoint=False),
+    np.linspace(0, 1, int(np.sqrt(settings.N)), endpoint=False)
+)
+oxr = ox.reshape(1, -1)[0]
+oyr = oy.reshape(1, -1)[0]
+oxr, oyr = convert_to_rhombus(oxr, oyr)
 # random walk firing rate subplot
 ax_rw = fig.add_subplot(spec[4:6, 3:5])
 ax_rw.spines['top'].set_visible(False)
@@ -674,8 +681,15 @@ if os.path.exists(grsrw_fname):
         if extend:
             while i < imax:
                 print(i)
-                ox, oy = gen_offsets(N=settings.N)
-                oxr, oyr = convert_to_rhombus(ox, oy)
+                # ox, oy = gen_offsets(N=settings.N)
+                # oxr, oyr = convert_to_rhombus(ox, oy)
+                ox, oy = np.meshgrid(
+                    np.linspace(0, 1, int(np.sqrt(settings.N)), endpoint=False),
+                    np.linspace(0, 1, int(np.sqrt(settings.N)), endpoint=False)
+                )
+                oxr = ox.reshape(1, -1)[0]
+                oyr = oy.reshape(1, -1)[0]
+                oxr, oyr = convert_to_rhombus(oxr, oyr)
                 trajec = traj(settings.dt, settings.tmax, sp=settings.speed)
                 direc_binned, meanfr, _, summed_fr = gridpop_repsupp(
                     settings.N,
@@ -810,7 +824,7 @@ gr60s = pickle.load(open(gr60s_fname, "rb"))
 
 # parameter search
 ax_psearch = fig.add_subplot(spec[3:, 0:3])
-ax_psearch.set_aspect('equal')
+# ax_psearch.set_aspect('equal')
 plt.rcParams.update({'font.size': int(settings.fs)})
 pcolor_psearch = plt.pcolor(
     taus,
@@ -957,30 +971,29 @@ plt.title("star-like run", y=1.00, pad=14)
 # figure layout tweaks                                                        #
 ###############################################################################
 plt.subplots_adjust(
-    wspace=2.5,
-    hspace=2.5
+    wspace=3.2,
+    hspace=3.2
 )
 
 
-posparam = ax_psearch.get_position()
-pointsparam = posparam.get_points()
-mean_pointsparam = np.array(
-    [
-        (pointsparam[0][0] + pointsparam[1][0])/2,
-        (pointsparam[0][1] + pointsparam[1][1])/2
-    ]
-)
-pointsparam -= mean_pointsparam
-pointsparam[0][0] *= 0.65
-pointsparam[1][0] *= 0.8
-pointsparam[0][1] *= 1.2
-pointsparam[1][1] *= 1.2
-pointsparam += mean_pointsparam
-posparam.set_points(pointsparam)
-ax_psearch.set_position(posparam)
+# posparam = ax_psearch.get_position()
+# pointsparam = posparam.get_points()
+# mean_pointsparam = np.array(
+#     [
+#         (pointsparam[0][0] + pointsparam[1][0])/2,
+#         (pointsparam[0][1] + pointsparam[1][1])/2
+#     ]
+# )
+# pointsparam -= mean_pointsparam
+# pointsparam[0][0] *= 0.65
+# pointsparam[1][0] *= 0.8
+# pointsparam[0][1] *= 1.2
+# pointsparam[1][1] *= 1.2
+# pointsparam += mean_pointsparam
+# posparam.set_points(pointsparam)
+# ax_psearch.set_position(posparam)
 
 # ax_pos(ax_fr, 0., 0., 0.6, 1.)
-# ax_pos(ax_psearch, 0., 0.12, 0.6, 0.94)
 # ax_pos(ax_psearch, 0., 0.12, 0.7, 1.1)
 # ax_pos(ax_ratemap, 0., 0.02, 4.9, 4.9)
 # ax_pos(ax_cov, -0.060, 0.03, 0.80, 4)
@@ -997,8 +1010,8 @@ cbar_psearch = fig.colorbar(
 )
 cbar_psearch.set_label("Hexasymmetry\n(spk/s)", fontsize=int(settings.fs))
 
-
-ax_pos(ax_prefdir, 0., 0., 1.4, 1.4)
+ax_pos(ax_psearch, 0., 0.12, 0.825, 0.66)
+ax_pos(ax_prefdir, 0., 0., 1.6, 1.6)
 
 
 div_prefdir = make_axes_locatable(ax_prefdir)
@@ -1011,9 +1024,9 @@ cbar_prefdir.set_label('Firing rate\n(spk/s)', fontsize=settings.fs)
 cbar_prefdir.ax.tick_params(labelsize=settings.fs)
 
 
-ax_pos(ax_star_traj, -0.05, 0., 3.8, 3.8)
-ax_pos(ax_pwl_traj, -0.05, -0.02, 3.8, 3.8)
-ax_pos(ax_rw_traj, -0.05, -0.04, 3.8, 3.8)
+ax_pos(ax_star_traj, -0.05, 0., 4.5, 4.5)
+ax_pos(ax_pwl_traj, -0.05, -0.02, 4.5, 4.5)
+ax_pos(ax_rw_traj, -0.05, -0.04, 4.5, 4.5)
 
 # ax_pos(ax_star, 0., 0., 1.2, 0.5)
 # ax_pos(ax_pw, 0., -0.02, 1.2, 0.5)
@@ -1023,69 +1036,7 @@ ax_pos(ax_star, 0., 0., 1., 1.)
 ax_pos(ax_pw, 0., -0.02, 1., 1.)
 ax_pos(ax_rw, 0., -0.04, 1., 1.)
 
-
-# # Make trajectory plots larger
-# posstar = ax_star_traj.get_position()
-# pospwl = ax_pwl_traj.get_position()
-# posrw = ax_rw_traj.get_position()
-
-
-# pointsstar = posstar.get_points()
-# pointspwl = pospwl.get_points()
-# pointsrw = posrw.get_points()
-
-
-# mean_pointsstar = np.array(
-#     [
-#         (pointsstar[0][0] + pointsstar[1][0])/2,
-#         (pointsstar[0][1] + pointsstar[1][1])/2
-#     ]
-# )
-# mean_pointspwl = np.array(
-#     [
-#         (pointspwl[0][0] + pointspwl[1][0])/2,
-#         (pointspwl[0][1] + pointspwl[1][1])/2
-#     ]
-# )
-# mean_pointsrw = np.array(
-#     [
-#         (pointsrw[0][0] + pointsrw[1][0])/2,
-#         (pointsrw[0][1] + pointsrw[1][1])/2
-#     ]
-# )
-
-
-# pointsstar -= mean_pointsstar
-# pointspwl -= mean_pointspwl
-# pointsrw -= mean_pointsrw
-
-
-# pointsstar = 3.5*pointsstar
-# pointspwl = 3.5*pointspwl
-# pointsrw = 3.5*pointsrw
-
-
-# pointsstar += mean_pointsstar
-# pointspwl += mean_pointspwl
-# pointsrw += mean_pointsrw
-
-
-# pointsstar[0][0] -= 0.05
-# pointsstar[1][0] -= 0.05
-# pointspwl[0][0] -= 0.05
-# pointspwl[1][0] -= 0.05
-# pointsrw[0][0] -= 0.05
-# pointsrw[1][0] -= 0.05
-
-
-# posstar.set_points(pointsstar)
-# pospwl.set_points(pointspwl)
-# posrw.set_points(pointsrw)
-
-
-# ax_star_traj.set_position(posstar)
-# ax_pwl_traj.set_position(pospwl)
-# ax_rw_traj.set_position(posrw)
+# plt.tight_layout
 
 
 plt.savefig(

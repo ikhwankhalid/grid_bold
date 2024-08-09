@@ -1,3 +1,8 @@
+"""
+For historical reasons, this script generates two separate plots which were
+combined in inkscape.
+"""
+
 from utils.grid_funcs import (
     gridpop_clustering,
     gridpop_conj,
@@ -20,6 +25,15 @@ import os
 import settings
 import time
 from datetime import timedelta
+
+
+plotloc = os.path.join(
+    settings.loc,
+    "plots",
+    "trajectories",
+    "rw",
+    "torts.png"
+)
 
 
 def sim_bnds(
@@ -333,7 +347,7 @@ def sim_bnds(
 
     plt.tight_layout()
     os.makedirs(os.path.dirname(hexplotloc), exist_ok=True)
-    plt.savefig(hexplotloc)
+    plt.savefig(hexplotloc, dpi=300)
 
 
 if __name__ == "__main__":
@@ -357,13 +371,6 @@ if __name__ == "__main__":
     spec = fig.add_gridspec(
         ncols=4,
         nrows=1,
-    )
-    plotloc = os.path.join(
-        settings.loc,
-        "plots",
-        "trajectories",
-        "rw",
-        "torts.png"
     )
 
     init_dirs = np.linspace(0, 2*np.pi, 5, endpoint=False)
@@ -450,7 +457,15 @@ if __name__ == "__main__":
             xlabel="x (cm)"
         )
 
+    plotloc = os.path.join(
+        settings.loc,
+        "plots",
+        "trajectories",
+        "rw",
+        "torts.png"
+    )
+
     plt.tight_layout()
     os.makedirs(os.path.dirname(plotloc), exist_ok=True)
-    plt.savefig(plotloc)
+    plt.savefig(plotloc, dpi=300)
     plt.close()

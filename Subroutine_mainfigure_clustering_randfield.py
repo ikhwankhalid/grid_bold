@@ -1051,7 +1051,7 @@ cb = plt.colorbar(im, cax=cax, ticks=[cbarmin, cbarmax])
 cb.ax.set_yticklabels(["min", "max"])
 cb.set_label('Density', rotation=90)
 plt.text(
-    0.85, 0.76,
+    0.84, 0.74,
     f"""
     $\\kappa_s$={
         np.round_(np.mean(np.array([kx_none_phases, ky_none_phases])), 3)
@@ -1075,7 +1075,7 @@ cb = plt.colorbar(im, cax=cax, ticks=[cbarmin, cbarmax])
 cb.ax.set_yticklabels(["min", "max"])
 cb.set_label('Density', rotation=90)
 plt.text(
-    0.85, 0.605,
+    0.84, 0.585,
     f"""
     $\\kappa_s$={
         np.round_(np.mean(np.array([kx_gauss_phases, ky_gauss_phases])), 3)
@@ -1099,7 +1099,7 @@ cb = plt.colorbar(im, cax=cax, ticks=[cbarmin, cbarmax])
 cb.ax.set_yticklabels(["min", "max"])
 cb.set_label('Density', rotation=90)
 plt.text(
-    0.85, 0.445,
+    0.84, 0.425,
     f"""
     $\\kappa_s$={
         np.round_(np.mean(np.array([kx_grid_phases, ky_grid_phases])), 3)

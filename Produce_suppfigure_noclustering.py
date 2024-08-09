@@ -657,4 +657,13 @@ plt.xticks(
     ]
 )
 plt.ylim(0.1, 100)
-plt.show()
+plt.tight_layout()
+
+plot_fname = os.path.join(
+    settings.loc,
+    "clustering",
+    "no-clustering",
+    "figure_noclustering.png"
+)
+os.makedirs(os.path.dirname(plot_fname), exist_ok=True)
+plt.savefig(plot_fname, dpi=300)

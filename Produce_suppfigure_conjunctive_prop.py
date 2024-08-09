@@ -9,6 +9,7 @@ import pickle
 import matplotlib.pyplot as plt
 import numpy as np
 import settings
+import matplotlib as mpl
 from utils.grid_funcs import (
     gen_offsets,
     gridpop_conj,
@@ -186,8 +187,9 @@ else:
 ###############################################################################
 real_id = np.argmin(np.abs(props - 0.33))   # index of realistic proportion
 
+mpl.rcParams['figure.dpi'] = 300
 plt.rcParams.update({'font.size': settings.fs})
-plt.figure()
+plt.figure(figsize=(8, 5))
 for traj_type in traj_types:
     # Plot median hexasymmetry
     plt.plot(
@@ -219,9 +221,19 @@ plt.plot(
     color="black",
     zorder=0
 )
+plt.gca().set_aspect('equal')
 plt.yscale("log")
 plt.xscale("log")
 plt.ylabel("Hexasymmetry (spk/s)")
 plt.xlabel("Proportion of conjunctive cells")
 plt.legend()
-plt.show()
+plt.tight_layout()
+
+plot_fname = os.path.join(
+    settings.loc,
+    "conjunctive",
+    "propconj",
+    "figure_propconj.png"
+)
+os.makedirs(os.path.dirname(plot_fname), exist_ok=True)
+plt.savefig(plot_fname, dpi=300)

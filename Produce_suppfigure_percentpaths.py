@@ -228,5 +228,12 @@ fig.colorbar(
 )
 plt.yticks([1, 50, 100])
 plt.tight_layout()
-plt.savefig("percentpaths.png", dpi=300)
-plt.close()
+
+plot_fname = os.path.join(
+    settings.loc,
+    "clustering",
+    "percentpaths",
+    "Figure_percentpaths.png"
+)
+os.makedirs(os.path.dirname(plot_fname), exist_ok=True)
+plt.savefig(plot_fname, dpi=300)

@@ -3,9 +3,11 @@ import matplotlib.pyplot as plt
 import os
 import pickle
 import settings
-from numba import njit, jit
 import matplotlib.collections as mcoll
+from numba import njit, jit
 from scipy.ndimage import gaussian_filter
+from sklearn.linear_model import LinearRegression
+from math import remainder
 
 
 @njit(parallel=True, fastmath=True, nogil=True)
@@ -236,6 +238,392 @@ def get_pathsyms():
         pathsyms = pickle.load(f)
 
     return pathsyms["star"], pathsyms["pwl"], pathsyms["rw"]
+
+
+def divide_dataset(x, y, num_groups):
+    if len(x) != len(y):
+        raise ValueError("x and y must have the same length.")
+
+    if num_groups < 1:
+        raise ValueError("num_groups must be greater than 0.")
+
+    # Calculate the size of each group
+    group_size = len(x) // num_groups
+
+    # Calculate the number of elements that will be left after dividing into
+    # equal groups
+    remainder = len(x) % num_groups
+
+    groups = []
+
+    start_idx = 0
+    for i in range(num_groups):
+        end_idx = start_idx + group_size
+
+        # Distribute the remainder elements one by one to the groups
+        if remainder > 0:
+            end_idx += 1
+            remainder -= 1
+
+        # Get the x and y values for this group
+        group_x = x[start_idx:end_idx]
+        group_y = y[start_idx:end_idx]
+
+        groups.append((group_x, group_y))
+
+        start_idx = end_idx
+
+    return groups
+
+
+def cosine_sine_regressors(x, n0=6, n_terms=1):
+    """
+    Generate cosine and sine regressors for the given data x
+
+    Parameters:
+    x (array): Input data
+    n_terms (int): Number of terms for cosine and sine (default is 1)
+
+    Returns:
+    tuple: A tuple containing the cosine and sine regressors (arrays)
+    """
+    x = np.array(x)
+    cosine_regressors = np.zeros((len(x), n_terms))
+    sine_regressors = np.zeros((len(x), n_terms))
+
+    for i in range(n_terms):
+        cosine_regressors[:, i] = np.cos((i+n0) * x)
+        sine_regressors[:, i] = np.sin((i+n0) * x)
+
+    return cosine_regressors, sine_regressors
+
+
+def get_glm_hex(x, signal):
+    # Divide the dataset
+    groups = divide_dataset(x, signal, num_groups=2)
+    x_odd, signal_odd = groups[0]
+    x_even, signal_even = groups[1]
+
+    # Get orientation with first half of the data
+    cosine_regressors, sine_regressors = cosine_sine_regressors(x_odd)
+    X1 = np.hstack((cosine_regressors, sine_regressors))
+    model1 = LinearRegression()
+    model1.fit(X1, signal_odd)
+
+    # Get the beta values of the GLM
+    betas = model1.coef_
+    angle = np.arctan2(betas[1], betas[0]) / 6
+    # angle = np.arctan(-betas[0] / betas[1]) / 6
+
+    # Get hexasymmetry with the second half
+    X2 = np.cos(6 * (x_even + angle))
+    X2 = X2.reshape(-1, 1)
+    model2 = LinearRegression()
+    model2.fit(X2, signal_even)
+    beta = model2.coef_
+
+    hex = beta
+
+    return hex, angle, beta, model2.intercept_
+
+
+def get_glmbinning_hex_means(
+    x: np.ndarray,
+    signal: np.ndarray,
+    bin_shift: float = np.deg2rad(15.),
+    num_bins: int = 12
+):
+    """
+    Obtain the hexasymmetry and other parameters using the Kunz method on a
+    given signal that is divided into two datasets.
+
+    Parameters
+    ----------
+    x : ndarray
+        The vector of headings.
+
+    signal : ndarray
+        The signal to analyze.
+
+    num_bins : int, optional
+        The number of bins to use for the computation, by default 12 to match
+        experimental studies.
+
+    bin_shift : float, optional
+        The shift for the bins in radians, by default np.deg2rad(15.) so that
+        the center of bins is aligned to either a peak or a trough.
+
+    real : bool, optional
+        If True, the function uses a Generalized Linear Model (GLM) on the
+        second half of the dataset.
+        If False, the function calculates the mean of highs and lows of the
+        subsampled signal, by default True.
+
+    Returns
+    -------
+    tuple
+        A tuple containing the hexasymmetry, amplitude, orientation,and the
+        intercept from the GLMs.
+
+    """
+    # Divide dataset
+    groups = divide_dataset(x, signal, num_groups=2)
+    x_odd, signal_odd = groups[0]
+    x_even, signal_even = groups[1]
+
+    # Get orientation with first half of data
+    cosine_regressors, sine_regressors = cosine_sine_regressors(x_odd)
+    X = np.hstack((cosine_regressors, sine_regressors))
+    # y_pred = model.predict(X)
+
+    # Get the beta values of the GLM
+    model = LinearRegression()
+    model.fit(X, signal_odd)
+    betas = model.coef_
+    angle = np.arctan(betas[1] / betas[0]) / 6  # orientation
+
+    # Get hexasymmetry with second half of data
+    # Define bin edges based on orientation
+    bin_edges = np.linspace(
+        0. + angle - bin_shift,
+        2*np.pi + angle - bin_shift,
+        num_bins + 1,
+        endpoint=True
+    )
+
+    # Extend heading and signal vectors for headings +- 2 pi
+    ext_x = np.tile(x_even, 3)
+    ext_x[:int(len(ext_x)/3)] -= 2 * np.pi
+    ext_x[2*int(len(ext_x)/3):] += 2 * np.pi
+    # ext_x = np.linspace(
+    #     -2 * np.pi, 2 * 2 * np.pi, 3*len(x), endpoint=False
+    # )
+    ext_signal = np.tile(signal_even, 3)
+
+    # Only select points between the defined bin edges
+    ext_signal = ext_signal[
+        np.argwhere(
+            np.logical_and(ext_x > bin_edges[0], ext_x < bin_edges[-1])
+        ).reshape(-1)
+    ]
+
+    # Compute the indices of the bins for the extended time and signal
+    bin_indices = np.digitize(ext_x, bin_edges)
+    bin_indices = bin_indices[
+        np.argwhere(
+            np.logical_and(ext_x > bin_edges[0], ext_x < bin_edges[-1])
+        ).reshape(-1)
+    ]
+
+    # ext_x = ext_x[
+    #     np.argwhere(
+    #         np.logical_and(ext_x > bin_edges[0], ext_x < bin_edges[-1])
+    #     ).reshape(-1)
+    # ]
+
+    # Compute the subsampled signal by averaging the signal over each bin
+    subsampled_signal = []
+    for i in range(1, num_bins+1):
+        bin_data = ext_signal[bin_indices == i]
+        bin_data = bin_data[~np.isnan(bin_data)]
+        if len(bin_data) == 0:
+            subsampled_signal.append(np.nan)
+        else:
+            subsampled_signal.append(bin_data.mean())
+    subsampled_signal = np.array(subsampled_signal)
+
+    # Flatten the subsampled signal
+    subsampled_signal = np.reshape(subsampled_signal, -1)
+
+    # Estimate amplitude and get hexasymmetry
+    if True:
+        # GLM on second half
+        X2 = np.ones(len(subsampled_signal)).reshape(-1, 1)
+        X2[1::2, :] *= -1
+        model2 = LinearRegression()
+        model2.fit(X2, subsampled_signal)
+        amp = model2.coef_
+
+    else:
+        evens = subsampled_signal[0::2]
+        evens = evens[~np.isnan(evens)]
+        odds = subsampled_signal[1::2]
+        odds = odds[~np.isnan(odds)]
+        # If difference of means is used, amp needs to be divided by 4
+        amp = (np.mean(evens) - np.mean(odds)) / 2
+
+    hex = np.abs(amp / 2)
+
+    return hex, amp, angle, model.intercept_
+
+
+def get_aligned_idx(
+    array, preferred_angle, tolerance, angperiod=np.deg2rad(60.)
+):
+    '''
+    This function takes an array of angles in radians, a preferred angle in
+    radians, and a tolerance in radians. It returns the indices of all
+    directions in the array which are within the tolerance of the preferred
+    angle and all its multiples.
+    '''
+    # Normalize array of angles to be within -pi to pi
+    array = np.arctan2(np.sin(array), np.cos(array))
+
+    # Initialise array of indices
+    within_tolerance = []
+
+    # Iterate over each angle in the array
+    for i, angle in enumerate(array):
+        # Calculate the difference between the movement direction and the
+        # closest preferred movement direction
+        diff = np.abs(remainder(angle - preferred_angle, angperiod))
+        # Check if the minimum difference is within the specified tolerance
+        if diff < tolerance:
+            # If it is, add the index of the angle to the list
+            within_tolerance.append(i)
+
+    return within_tolerance
+
+
+def get_glmbinning_hex(
+    x: np.ndarray,
+    signal: np.ndarray,
+    bin_shift: float = np.deg2rad(15.)
+):
+    """
+    Obtain the hexasymmetry and other parameters using the GLM method with
+    binning for a given signal that is divided into two datasets.
+
+    Parameters
+    ----------
+    x : ndarray
+        The vector of headings.
+
+    signal : ndarray
+        The signal to analyze.
+
+    bin_shift : float, optional
+        The shift for the bins in radians, by default np.deg2rad(15.) so that
+        the center of bins is aligned to either a peak or a trough.
+
+    Returns
+    -------
+    tuple
+        A tuple containing the hexasymmetry, amplitude, orientation,and the
+        intercept from the GLMs.
+
+    """
+    # Divide dataset
+    groups = divide_dataset(x, signal, num_groups=2)
+    x_odd, signal_odd = groups[0]
+    x_even, signal_even = groups[1]
+
+    # Get orientation with first half of data
+    cosine_regressors, sine_regressors = cosine_sine_regressors(x_odd)
+    X = np.hstack((cosine_regressors, sine_regressors))
+
+    # Get the beta values of the GLM
+    model = LinearRegression()
+    model.fit(X, signal_odd)
+    betas = model.coef_
+    angle = np.arctan2(betas[1], betas[0]) / 6
+    # angle = (np.arctan(- betas[0] / betas[1])) / 6 + np.pi
+
+    # GLM on second half
+    align_idx = get_aligned_idx(x_even, angle, bin_shift)
+    misalign_idx = np.delete(np.arange(len(x_even)), align_idx)
+    X2 = np.ones(len(x_even)).reshape(-1, 1)
+    X2[misalign_idx] *= -1
+    model2 = LinearRegression()
+    model2.fit(X2, signal_even)
+    amp = model2.coef_
+
+    # Hexasymmetry is half the of the beta value
+    hex = amp
+
+    return hex, amp, angle, model2.intercept_
+
+
+def _corr(x, y, axis=0):
+    return np.sum((x - x.mean(axis=axis, keepdims=True)) *
+                  (y - y.mean(axis=axis, keepdims=True)), axis=axis) \
+            / np.std(x, axis=axis) / np.std(y, axis=axis) / x.shape[axis]
+
+
+def circlin_cl(linear_var, circular_var, radians=True, fold=6.):
+    # Convert the circular variable to radians if it's in degrees
+    if not radians:
+        circular_var = np.radians(circular_var)
+
+    # Compute the cosine and sine of the circular variable
+    cos_circular_var = np.cos(fold*circular_var)
+    sin_circular_var = np.sin(fold*circular_var)
+
+    # Compute the correlation coefficients
+    # r_lc = _corr(linear_var, cos_circular_var)
+    # r_ls = _corr(linear_var, sin_circular_var)
+    # r_cs = _corr(cos_circular_var, sin_circular_var)
+
+    # pcl = np.sqrt((r_lc**2 + r_ls**2 - 2*r_lc*r_ls*r_cs) / (1 - r_cs**2))
+
+    # Find the regression coefficients for the linear regression
+    b_cos = np.linalg.lstsq(
+        np.vstack(
+            [cos_circular_var, np.ones(len(cos_circular_var))]
+        ).T, linear_var, rcond=None
+    )[0][0]
+    b_sin = np.linalg.lstsq(
+        np.vstack(
+            [sin_circular_var, np.ones(len(sin_circular_var))]
+        ).T, linear_var, rcond=None
+    )[0][0]
+
+    # Calculate the amplitude of the fitted sine
+    amp = np.sqrt(b_cos**2 + b_sin**2)
+    hex = amp / 2
+
+    # return pcl
+    return hex
+
+
+def create_surrogate_distribution(series, values):
+    """
+    Create a surrogate distribution by shuffling the indices of the input
+    arrays.
+
+    Parameters
+    ----------
+    series : array-like
+        Time series data.
+    values : array-like
+        Corresponding values for each point in the time series.
+
+    Returns
+    -------
+    surrogate_time_series : array-like
+        Shuffled time series data.
+    surrogate_values : array-like
+        Corresponding values for each point in the shuffled time series.
+
+    Raises
+    ------
+    ValueError
+        If the input arrays have different lengths.
+
+    """
+    # Checking if both arrays have the same length
+    if len(series) != len(values):
+        raise ValueError("Both input arrays should have the same length.")
+
+    # Shuffling the indices of the arrays
+    shuffled_indices = np.arange(len(series))
+    np.random.shuffle(shuffled_indices)
+
+    # Creating the surrogate distribution using the shuffled indices
+    surrogate_time_series = np.array([series[i] for i in shuffled_indices])
+    surrogate_values = np.array([values[i] for i in shuffled_indices])
+
+    return surrogate_time_series, surrogate_values
 
 
 def visualise_traj(
